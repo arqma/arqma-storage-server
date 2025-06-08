@@ -13,7 +13,7 @@ Building from git clone:
 ```
 git submodule update --init
 mkdir build && cd build
-USE_SINGLE_BUILDDIR=1 make all
+USE_SINGLE_BUILDDIR=1 make release-all
 cd build/release/binaries
 ```
 
