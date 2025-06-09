@@ -11,8 +11,6 @@ sodium >= 1.0.16 (for ed25119 to curve25519 conversion)
 
 Building from git clone:
 ```
-git submodule update --init
-mkdir build && cd build
 USE_SINGLE_BUILDDIR=1 make all
 cd build/release/binaries
 ```
