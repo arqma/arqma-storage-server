@@ -7,12 +7,42 @@ on:
     branches: [ master ]
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      # Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Docker Buildx for multi-arch (optional, can be skipped if not needed)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Cache Docker layers (optional but speeds up builds)
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-docker-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
+
+      # Build the Docker image
+      - name: Build the Docker image
+        run: |
+          docker build \
+            --file Dockerfile \
+            --tag arqma-storage-server:ci-${{ github.sha }} .
+
+      # (Optional) Save the image as artifact or push to registry
+      # You can uncomment and adapt the following to push:
+      #
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+      #
+      # - name: Push image to Docker Hub
+      #   run: docker push yourdockeruser/arqma-storage-server:ci-${{ github.sha }}
