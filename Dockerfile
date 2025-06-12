@@ -3,7 +3,6 @@
 # === Stage 1: Build the binary ===
 FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS builder
 
-# Avoid interactive tzdata prompt
 ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /src
@@ -26,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Build the project using Makefile
+# Build using Makefile
 RUN make all
 
 # === Stage 2: Runtime image ===
@@ -40,19 +39,21 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled binary from the builder
+# Copy binary
 COPY --from=builder /src/binaries/arqma-storage /usr/local/bin/arqma-storage
 
-# Copy the custom entrypoint script
+# Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create a non-root user for security
-RUN useradd --no-create-home --shell /bin/false storage
+# Create user with home directory
+RUN useradd --create-home --home-dir /home/storage --shell /bin/bash storage
+
+# Ensure ~/.arqma can be used
+RUN mkdir -p /home/storage/.arqma && chown -R storage:storage /home/storage
+
 USER storage
 
-# Expose port used by arqma-storage
 EXPOSE 19996
 
-# Default entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
