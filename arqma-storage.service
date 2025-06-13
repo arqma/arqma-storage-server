@@ -1,0 +1,20 @@
+[Unit]
+Description=Arqma Storage Server
+After=network-online.target
+
+[Service]
+User=arqma
+Group=arqma
+WorkingDirectory=~
+StateDirectory=arqma-storage
+LogsDirectory=arqma-storage
+
+Type=simple
+ExecStart=/home/arqma/arqma-storage-server/binaries/arqma-storage <public IP> <public port> --arqmad-rpc-port 19994
+StandardOutput=null
+StandardError=null
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

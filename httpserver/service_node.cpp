@@ -224,9 +224,9 @@ void ServiceNode::bootstrap_data() {
 
     std::vector<std::pair<std::string, uint16_t>> seed_nodes;
     if (arqma::is_mainnet()) {
-      seed_nodes = {{{"us.pool.arqma.com", 19994},
-                     {"eu.supportarqma.com", 19994},
-                     {"194.233.64.43", 19994}}};
+      seed_nodes = {{{"node1.arqma.com", 19994},
+                     {"161.97.102.172", 19994},
+                     {"62.171.181.142", 19994}}};
     } else {
       seed_nodes = {{{"161.97.102.172", 39994},
                      {"144.217.242.16", 39994}}};

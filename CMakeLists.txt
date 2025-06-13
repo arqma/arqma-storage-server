@@ -14,7 +14,7 @@ cmake_minimum_required(VERSION 3.18)
 message(STATUS "Cmake version ${CMAKE_VERSION}")
 
 project(storage_server
-  VERSION 1.0.0
+  VERSION 1.1.0
   LANGUAGES CXX C)
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")

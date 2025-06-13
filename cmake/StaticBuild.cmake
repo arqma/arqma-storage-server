@@ -28,13 +28,12 @@ set(SODIUM_SOURCE libsodium-${SODIUM_VERSION}.tar.gz)
 set(SODIUM_HASH SHA512=17e8638e46d8f6f7d024fe5559eccf2b8baf23e143fadd472a7d29d228b186d86686a5e6920385fe2020729119a5f12f989c3a782afbd05a8db4819bb18666ef
   CACHE STRING "libsodium source hash")
 
-set(SQLITE3_VERSION 3340000 CACHE STRING "sqlite3 version")
-set(SQLITE3_MIRROR ${LOCAL_MIRROR} https://www.sqlite.org/2020
+set(SQLITE3_VERSION 3500100 CACHE STRING "sqlite3 version")
+set(SQLITE3_MIRROR ${LOCAL_MIRROR} https://www.sqlite.org/2025
     CACHE STRING "sqlite3 download mirror(s)")
 set(SQLITE3_SOURCE sqlite-autoconf-${SQLITE3_VERSION}.tar.gz)
-set(SQLITE3_HASH SHA512=75a1a2d86ab41354941b8574e780b1eae09c3c01f8da4b08f606b96962b80550f739ec7e9b1ceb07bba1cedced6d18a1408e4c10ff645eb1829d368ad308cf2f
+set(SQLITE3_HASH SHA512=0526bab596282a93a1588e11c53662b3f4b17c32d5a5be25d99cca48307934c127cc39750448aceb8321af98683409b011a55bd8b5b157fe262ad437a793e672
     CACHE STRING "sqlite3 source hash")
-
 
 include(ExternalProject)
 
@@ -81,10 +80,7 @@ endif()
 
 set(cross_host "")
 set(cross_extra "")
-if (ANDROID)
-  set(cross_host "--host=${CMAKE_LIBRARY_ARCHITECTURE}")
-  set(cross_extra "LD=${ANDROID_TOOLCHAIN_ROOT}/bin/${CMAKE_LIBRARY_ARCHITECTURE}-ld" "RANLIB=${CMAKE_RANLIB}" "AR=${CMAKE_AR}")
-elseif(CMAKE_CROSSCOMPILING)
+if(CMAKE_CROSSCOMPILING)
   if(APPLE)
     set(cross_host "--host=${APPLE_TARGET_TRIPLE}")
   else()
@@ -300,8 +296,10 @@ set(Boost_VERSION ${BOOST_VERSION})
 
 
 build_external(sqlite3
+  CONFIGURE_COMMAND ./configure ${cross_host} --disable-shared --prefix=${DEPS_DESTDIR}
+    "CC=${deps_cc}" "CFLAGS=${deps_CFLAGS}" ${cross_extra}
   BUILD_COMMAND true
-  INSTALL_COMMAND make install-includeHEADERS install-libLTLIBRARIES)
+  INSTALL_COMMAND make install-headers install-lib)
 add_static_target(sqlite3 sqlite3_external libsqlite3.a)
 
 
