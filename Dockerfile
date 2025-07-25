@@ -1,72 +1,59 @@
-FROM ubuntu:xenial
+# syntax=docker/dockerfile:1
 
-RUN apt update && apt install -y build-essential curl git cmake libssl-dev libsodium-dev wget pkg-config autoconf libtool
-WORKDIR /usr/src/app
+# === Stage 1: Build the binary ===
+FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS builder
 
-#Cmake
-ARG CMAKE_VERSION=3.14.0
-ARG CMAKE_VERSION_DOT=v3.14
-ARG CMAKE_HASH=aa76ba67b3c2af1946701f847073f4652af5cbd9f141f221c97af99127e75502
-RUN set -ex \
-    && curl -s -O https://cmake.org/files/${CMAKE_VERSION_DOT}/cmake-${CMAKE_VERSION}.tar.gz \
-    && echo "${CMAKE_HASH}  cmake-${CMAKE_VERSION}.tar.gz" | sha256sum -c \
-    && tar -xzf cmake-${CMAKE_VERSION}.tar.gz \
-    && cd cmake-${CMAKE_VERSION} \
-    && ./configure \
-    && make \
-    && make install
-    
-## Boost
-ARG BOOST_VERSION=1_76_0
-ARG BOOST_VERSION_DOT=1_76_0
-ARG BOOST_HASH=f0397ba6e982c4450f27bf32a2a83292aba035b827a5623a14636ea583318c41
-RUN set -ex \
-    && curl -s -L -o  boost_${BOOST_VERSION}.tar.bz2 =https://archives.boost.io/release/$($(package)_version)/source/ \
-    && echo "${BOOST_HASH}  boost_${BOOST_VERSION}.tar.bz2" | sha256sum -c \
-    && tar -xvf boost_${BOOST_VERSION}.tar.bz2 \
-    && cd boost_${BOOST_VERSION} \
-    && ./bootstrap.sh \
-    && ./b2 --build-type=minimal link=static runtime-link=static --with-chrono --with-date_time --with-filesystem --with-program_options --with-regex --with-serialization --with-system --with-thread --with-locale threading=multi threadapi=pthread cflags="-fPIC" cxxstd=14 cxxflags="-fPIC" stage
-ENV BOOST_ROOT /usr/local/boost_${BOOST_VERSION}
+ENV DEBIAN_FRONTEND=noninteractive
 
-# OpenSSL
-ARG OPENSSL_VERSION=1.1.1c
-ARG OPENSSL_HASH=f6fb3079ad15076154eda9413fed42877d668e7069d9b87396d0804fdb3f4c90
-RUN set -ex \
-    && curl -s -O https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz \
-    && echo "${OPENSSL_HASH}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum -c \
-    && tar -xzf openssl-${OPENSSL_VERSION}.tar.gz \
-    && cd openssl-${OPENSSL_VERSION} \
-    && ./Configure linux-x86_64 no-shared --static -fPIC \
-    && make build_generated \
-    && make libcrypto.a \
-    && make install
-ENV OPENSSL_ROOT_DIR=/usr/local/openssl-${OPENSSL_VERSION}
+WORKDIR /src
+COPY . .
 
-# Sodium
-ARG SODIUM_VERSION=1.0.18
-ARG SODIUM_HASH=4f5e89fa84ce1d178a6765b8b46f2b6f91216677
-RUN set -ex \
-    && git clone https://github.com/jedisct1/libsodium.git -b ${SODIUM_VERSION} --depth=1 \
-    && cd libsodium \
-    && test `git rev-parse HEAD` = ${SODIUM_HASH} || exit 1 \
-    && ./autogen.sh \
-    && CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure \
-    && make \
-    && make check \
-    && make install
+ARG TARGETPLATFORM
+ARG TARGETARCH
+ARG TARGETOS
+ENV TARGETPLATFORM=$TARGETPLATFORM \
+    TARGETARCH=$TARGETARCH \
+    TARGETOS=$TARGETOS
 
-ADD https://api.github.com/repos/arqtras/arqma-storage-server/git/refs/heads/arq version.json
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pkg-config \
+    git \
+    cmake \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/arqtras/arqma-storage-server.git --depth=1
-RUN cd arqma-storage-server && git submodule update --init
+# Build using Makefile
+RUN make all
 
-ENV BOOST_ROOT /usr/src/app/boost_${BOOST_VERSION}
+# === Stage 2: Runtime image ===
+FROM ubuntu:22.04
 
-RUN cd arqma-storage-server \
-    && mkdir -p build \
-    && cd build \
-    && cmake .. -DBOOST_ROOT=$BOOST_ROOT \
-    && cmake --build .
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN arqma-storage-server/build/httpserver/arqma-storage --version
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binary
+COPY --from=builder /src/binaries/arqma-storage /usr/local/bin/arqma-storage
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Create user with home directory
+RUN useradd --create-home --home-dir /home/storage --shell /bin/bash storage
+
+# Ensure ~/.arqma can be used
+RUN mkdir -p /home/storage/.arqma && chown -R storage:storage /home/storage
+
+USER storage
+
+EXPOSE 19996
+
+ENTRYPOINT ["/entrypoint.sh"]
