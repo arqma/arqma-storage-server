@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <filesystem>
+#include <boost/filesystem/path.hpp>
 
 namespace arqma {
 
@@ -10,7 +10,7 @@ struct arqmad_key_pair_t;
 class Security {
   public:
     Security(const arqmad_key_pair_t& key_pair,
-             const std::filesystem::path& base_path);
+             const boost::filesystem::path& base_path);
 
     std::string base64_sign(const std::string& body);
     void generate_cert_signature();
@@ -19,6 +19,6 @@ class Security {
   private:
     const arqmad_key_pair_t& key_pair_;
     std::string cert_signature_;
-    std::filesystem::path base_path_;
+    boost::filesystem::path base_path_;
 };
 } // namespace arqma

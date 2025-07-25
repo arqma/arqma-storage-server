@@ -17,7 +17,8 @@ target_link_libraries(crypto
     OpenSSL::SSL
     OpenSSL::Crypto
     sodium
-    Boost::boost
-    filesystem
+    Boost::system
+    Boost::program_options
+    Boost::filesystem
     Threads::Threads
     ${CMAKE_DL_LIBS})

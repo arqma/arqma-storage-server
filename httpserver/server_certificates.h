@@ -1,11 +1,11 @@
 #pragma once
 
-#include <filesystem>
+#include <boost/filesystem.hpp>
 #include <boost/asio/ssl/context.hpp>
 
 namespace arqma {
 
-void generate_dh_pem(const std::filesystem::path& dh_path);
-void generate_cert(const std::filesystem::path& cert_path, const std::filesystem::path& key_path);
-void load_server_certificate(const std::filesystem::path& base_path, boost::asio::ssl::context& ctx);
+void generate_dh_pem(const char* dh_path);
+void generate_cert(const char* cert_path, const char* key_path);
+void load_server_certificate(const boost::filesystem::path& base_path, boost::asio::ssl::context& ctx);
 }

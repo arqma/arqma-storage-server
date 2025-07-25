@@ -3,4 +3,4 @@ add_library(utils STATIC
 )
 
 target_include_directories(utils PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(utils PRIVATE common)
+target_link_libraries(utils PRIVATE common Boost::system Boost::program_options Boost::filesystem)

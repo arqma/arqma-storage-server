@@ -10,14 +10,14 @@
 #include "version.h"
 #include "utils.hpp"
 
+#include <boost/filesystem.hpp>
 #include <sodium.h>
 
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <vector>
 
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 static boost::optional<fs::path> get_home_dir() {
 
@@ -30,7 +30,7 @@ static boost::optional<fs::path> get_home_dir() {
     if (pszHome == NULL || strlen(pszHome) == 0)
         return boost::none;
 
-    return fs::u8path(pszHome);
+    return fs::path(pszHome);
 }
 
 constexpr int EXIT_INVALID_PORT = 2;

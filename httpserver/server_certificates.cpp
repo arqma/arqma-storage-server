@@ -1,5 +1,6 @@
 #include "server_certificates.h"
 
+#include <boost/filesystem.hpp>
 #include <boost/asio/buffer.hpp>
 
 extern "C" {
@@ -142,7 +143,7 @@ namespace {
 
 }
 
-void generate_dh_pem(const std::filesystem::path& dh_path) {
+void generate_dh_pem(const char* dh_path) {
     const int prime_len = 2048;
     const int generator = DH_GENERATOR_2;
     DH* dh = DH_new();
@@ -164,12 +165,12 @@ void generate_dh_pem(const std::filesystem::path& dh_path) {
 
     ARQMA_LOG(info, "DH parameter done!");
     FILE* pFile = NULL;
-    pFile = fopen(dh_path.u8string().c_str(), "wt");
+    pFile = fopen(dh_path, "wt");
     PEM_write_DHparams(pFile, dh);
     fclose(pFile);
 }
 
-void generate_cert(const std::filesystem::path& cert_path, const std::filesystem::path& key_path) {
+void generate_cert(const char* cert_path, const char* key_path) {
     BIO* bio_err;
     X509* x509 = NULL;
     EVP_PKEY* pkey = NULL;
@@ -186,10 +187,10 @@ void generate_cert(const std::filesystem::path& cert_path, const std::filesystem
         goto err;
     // X509_print_fp(stdout, x509);
 
-    key_f = fopen(key_path.u8string().c_str(), "wt");
+    key_f = fopen(key_path, "wt");
     if (!PEM_write_PrivateKey(key_f, pkey, NULL, NULL, 0, NULL, NULL))
         goto err;
-    cert_f = fopen(cert_path.u8string().c_str(), "wt");
+    cert_f = fopen(cert_path, "wt");
     PEM_write_X509(cert_f, x509);
 
 err:
@@ -204,7 +205,7 @@ err:
     BIO_free(bio_err);
 }
 
-void load_server_certificate(const std::filesystem::path& base_path,
+void load_server_certificate(const boost::filesystem::path& base_path,
                                     boost::asio::ssl::context& ctx) {
     /*
         The certificate was generated from CMD.EXE on Windows 10 using:
@@ -214,15 +215,19 @@ void load_server_certificate(const std::filesystem::path& base_path,
        10000 -out cert.pem -subj "//C=US\ST=CA\L=Los
        Angeles\O=Beast\CN=www.example.com"
     */
-    const auto cert_path = base_path / "cert.pem";
-    const auto key_path = base_path / "key.pem";
-    const auto dh_path = base_path / "dh.pem";
+    const auto cert_path_str = (base_path / "cert.pem").string();
+    const auto key_path_str = (base_path / "key.pem").string();
+    const auto dh_path_str = (base_path / "dh.pem").string();
 
-    if (!std::filesystem::exists(cert_path) ||
-        !std::filesystem::exists(key_path)) {
+    const auto cert_path = cert_path_str.c_str();
+    const auto key_path = key_path_str.c_str();
+    const auto dh_path = dh_path_str.c_str();
+
+    if (!boost::filesystem::exists(cert_path) ||
+        !boost::filesystem::exists(key_path)) {
         generate_cert(cert_path, key_path);
     }
-    if (!std::filesystem::exists(dh_path)) {
+    if (!boost::filesystem::exists(dh_path)) {
         generate_dh_pem(dh_path);
     }
 
@@ -230,12 +235,12 @@ void load_server_certificate(const std::filesystem::path& base_path,
                     boost::asio::ssl::context::no_sslv2 |
                     boost::asio::ssl::context::single_dh_use);
 
-    ctx.use_certificate_chain_file(cert_path.u8string());
+    ctx.use_certificate_chain_file(cert_path);
 
-    ctx.use_private_key_file(key_path.u8string(),
+    ctx.use_private_key_file(key_path,
                              boost::asio::ssl::context::file_format::pem);
 
-    ctx.use_tmp_dh_file(dh_path.u8string());
+    ctx.use_tmp_dh_file(dh_path);
 }
 
 }

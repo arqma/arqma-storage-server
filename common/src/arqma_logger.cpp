@@ -5,7 +5,7 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "dev_sink.h"
 // clang-format on
-#include <filesystem>
+#include <boost/filesystem.hpp>
 
 #include <cstdlib>
 #include <fstream>
@@ -13,7 +13,7 @@
 
 namespace arqma {
 
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 bool parse_log_level(const std::string& input,
                      spdlog::level::level_enum& logLevel) {
@@ -39,7 +39,7 @@ void init_logging(const std::string& data_dir,
                   spdlog::level::level_enum log_level) {
 
     const std::string log_location =
-        (fs::u8path(data_dir) / "storage.logs").u8string();
+        (fs::path(data_dir) / "storage.logs").string();
     // Log to disk output stream
     const auto input = std::shared_ptr<std::ofstream>(
         new std::ofstream(log_location, std::ios::out | std::ios::app));

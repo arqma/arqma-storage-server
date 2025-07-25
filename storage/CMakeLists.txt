@@ -11,4 +11,4 @@ target_link_libraries(storage
     common
     utils
     sqlite3
-    Boost::boost)
+    Boost::filesystem)

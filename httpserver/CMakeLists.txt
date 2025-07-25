@@ -25,7 +25,8 @@ target_link_libraries(httpserver_lib
     OpenSSL::Crypto
     nlohmann_json::nlohmann_json
     Boost::system
-    Boost::program_options)
+    Boost::program_options
+    Boost::filesystem)
 
 find_library(RESOLV resolv)
 if(RESOLV)

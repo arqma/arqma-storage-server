@@ -1,0 +1,13 @@
+diff --git a/Configure.old b/Configure
+index 78cc15d..adc15a2 100755
+--- a/Configure.old
++++ b/Configure
+@@ -318,7 +318,7 @@ my $auto_threads=1;    # enable threads automatically? true by default
+ my $default_ranlib;
+ 
+ # Top level directories to build
+-$config{dirs} = [ "crypto", "ssl", "engines", "apps", "test", "util", "tools", "fuzz" ];
++$config{dirs} = [ "crypto", "ssl", "engines", "tools" ];
+ # crypto/ subdirectories to build
+ $config{sdirs} = [
+     "objects",

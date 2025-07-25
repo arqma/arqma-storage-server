@@ -93,25 +93,10 @@ endif()
 
 
 
-set(deps_CFLAGS "-O2 ${flto}")
-set(deps_CXXFLAGS "-O2 ${flto}")
+set(deps_CFLAGS "")
+set(deps_CXXFLAGS "")
 set(deps_noarch_CFLAGS "${deps_CFLAGS}")
 set(deps_noarch_CXXFLAGS "${deps_CXXFLAGS}")
-
-if(APPLE)
-  foreach(lang C CXX)
-    string(APPEND deps_${lang}FLAGS " ${CMAKE_${lang}_SYSROOT_FLAG} ${CMAKE_OSX_SYSROOT}")
-    if (CMAKE_OSX_DEPLOYMENT_TARGET)
-        string(APPEND deps_${lang}FLAGS " ${CMAKE_${lang}_OSX_DEPLOYMENT_TARGET_FLAG}${CMAKE_OSX_DEPLOYMENT_TARGET}")
-    endif()
-
-    set(deps_noarch_${lang}FLAGS "${deps_${lang}FLAGS}")
-
-    foreach(arch ${CMAKE_OSX_ARCHITECTURES})
-      string(APPEND deps_${lang}FLAGS " -arch ${arch}")
-    endforeach()
-  endforeach()
-endif()
 
 # Builds a target; takes the target name (e.g. "readline") and builds it in an external project with
 # target name suffixed with `_external`.  Its upper-case value is used to get the download details
@@ -153,9 +138,13 @@ function(build_external target)
   )
 endfunction()
 
-
-
-set(openssl_configure ./config)
+set(openssl_patch_commands "")
+if(APPLE)
+  set(openssl_patch_commands PATCH_COMMAND patch -p1 -i ${PROJECT_SOURCE_DIR}/cmake/conf.patch)
+  set(openssl_configure ./Configure darwin64-arm64-cc)
+else()
+  set(openssl_configure ./config)
+endif()
 set(openssl_system_env "")
 set(openssl_cc "${deps_cc}")
 if(CMAKE_CROSSCOMPILING)
@@ -178,10 +167,12 @@ if(CMAKE_CROSSCOMPILING)
   endif()
 endif()
 build_external(openssl
-  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${openssl_cc} ${openssl_system_env} ${openssl_configure}
-    --prefix=${DEPS_DESTDIR} ${openssl_extra_opts} no-shared no-capieng no-dso no-dtls1 no-ec_nistp_64_gcc_128 no-gost
+  ${openssl_patch_commands}
+  CONFIGURE_COMMAND ${openssl_sed} ${CMAKE_COMMAND} -E env CC=${openssl_cc} ${openssl_system_env} ${openssl_configure}
+    --prefix=${DEPS_DESTDIR} --openssldir=${DEPS_DESTDIR}/etc/openssl ${openssl_extra_opts} no-shared no-capieng no-dso no-dtls1 no-ec_nistp_64_gcc_128 no-gost
     no-heartbeats no-md2 no-rc5 no-rdrand no-rfc3779 no-sctp no-ssl-trace no-ssl2 no-ssl3
-    no-static-engine no-tests no-weak-ssl-ciphers no-zlib-dynamic "CFLAGS=${deps_CFLAGS}"
+    no-static-engine no-tests no-weak-ssl-ciphers no-zlib-dynamic
+  BUILD_COMMAND make build_libs
   INSTALL_COMMAND make install_sw
   BUILD_BYPRODUCTS
     ${DEPS_DESTDIR}/lib/libssl.a ${DEPS_DESTDIR}/lib/libcrypto.a
@@ -255,7 +246,7 @@ elseif(APPLE)
   endif()
 endif()
 
-set(boost_libs program_options system)
+set(boost_libs program_options system filesystem)
 if(BUILD_TESTS)
     list(APPEND boost_libs unit_test_framework)
 endif()
@@ -275,7 +266,7 @@ build_external(boost
   BUILD_COMMAND true
   INSTALL_COMMAND
     ./b2 -d0 variant=release link=static runtime-link=static optimization=speed ${boost_extra}
-      threading=multi threadapi=${boost_threadapi} ${boost_buildflags} cxxstd=14 visibility=global
+      threading=multi threadapi=${boost_threadapi} ${boost_buildflags} cxxstd=11 visibility=global
       --disable-icu --user-config=${CMAKE_CURRENT_BINARY_DIR}/user-config.bjam
       install
   BUILD_BYPRODUCTS
@@ -297,7 +288,7 @@ set(Boost_VERSION ${BOOST_VERSION})
 
 build_external(sqlite3
   CONFIGURE_COMMAND ./configure ${cross_host} --disable-shared --prefix=${DEPS_DESTDIR}
-    "CC=${deps_cc}" "CFLAGS=${deps_CFLAGS}" ${cross_extra}
+    "CC=${deps_cc}" ${cross_extra}
   BUILD_COMMAND true
   INSTALL_COMMAND make install-headers install-lib)
 add_static_target(sqlite3 sqlite3_external libsqlite3.a)

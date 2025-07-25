@@ -43,3 +43,6 @@ vendors/spdlog
 
 # Swapfiles
 **/*.swp
+
+# binaries
+binaries

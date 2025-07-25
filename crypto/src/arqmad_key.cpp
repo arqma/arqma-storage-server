@@ -4,11 +4,15 @@ extern "C" {
 #include "sodium/private/ed25519_ref10.h"
 }
 
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include <sodium.h>
 
 #include <exception>
 #include <fstream>
 #include <iterator>
+
+namespace fs = boost::filesystem;
 
 namespace arqma {
 

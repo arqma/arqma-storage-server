@@ -3,7 +3,6 @@
 #include "version.h"
 #include <netinet/in.h>
 #include <resolv.h>
-#include <charconv>
 
 #include <boost/algorithm/string.hpp>
 
@@ -85,10 +84,16 @@ static bool parse_version(const std::string& str, version_t& version_out) {
 
     for (size_t i = 0; i < 3; i++)
     {
-      auto* end = strs[i].data() + strs[i].size();
-      auto [p, ec] = std::from_chars(strs[i].data(), end, version_out[i]);
-      if (ec != std::errc() || p != end)
+      try {
+        size_t pos = 0;
+        version_out[i] = std::stoi(strs[i], &pos);
+        if (pos != strs[i].size())
+          return false;
+      } catch (const std::invalid_argument&) {
         return false;
+      } catch (const std::out_of_range&) {
+        return false;
+      }
     }
 
     return true;

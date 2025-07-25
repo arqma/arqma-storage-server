@@ -6,8 +6,12 @@
 
 #include "arqma_common.h"
 
-namespace boost::asio {
+namespace boost
+{
+namespace asio
+{
 class io_context;
+} // namespace asio
 } // namespace boost
 
 namespace arqma {
