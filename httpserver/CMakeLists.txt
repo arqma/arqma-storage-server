@@ -14,6 +14,9 @@ add_library(httpserver_lib STATIC
     server_certificates.cpp
     )
 
+set(JSON_MultipleHeaders ON CACHE BOOL "")
+add_subdirectory(../vendors/nlohmann_json nlohmann_json)
+
 target_link_libraries(httpserver_lib
   PUBLIC
     common

@@ -21,10 +21,10 @@ option(DISABLE_SNODE_SIGNATURE "Generate and verify signatures for inter-snode c
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
+#set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_definitions(-DBOOST_NO_CXX98_FUNCTION_BASE)
 
@@ -79,4 +79,3 @@ add_subdirectory(utils)
 add_subdirectory(crypto)
 add_subdirectory(storage)
 add_subdirectory(httpserver)
-add_subdirectory(vendors)
