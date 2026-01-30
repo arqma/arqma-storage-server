@@ -1,0 +1,18 @@
+[Unit]
+Description=Arqma Storage Server
+Wants=network.target
+After=arqmad.target network-online.target
+
+[Service]
+User=arqma
+Group=arqma
+WorkingDirectory=/home/arqma/arqma-storage-server/binaries
+Type=simple
+ExecStart=/home/arqma/arqma-storage-server/binaries/arqma-storage Yours_Public_IP 19999 --arqmad-rpc-port 19994
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+Alias=arqmass.service
