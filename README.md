@@ -1,5 +1,26 @@
 # arqma-storage-server
+
+[![Build Static Binaries](https://github.com/arqma/arqma-storage-server/actions/workflows/build-static-binaries.yml/badge.svg?branch=dev)](https://github.com/arqma/arqma-storage-server/actions/workflows/build-static-binaries.yml)
+[![Docker Image CI](https://github.com/arqma/arqma-storage-server/actions/workflows/docker-image.yml/badge.svg)](https://github.com/arqma/arqma-storage-server/actions/workflows/docker-image.yml)
+
 Storage server for Arqma Service Nodes
+
+## Download Pre-built Binaries
+
+Pre-built static binaries are automatically compiled for multiple platforms on every push to the `dev` branch.
+
+**Download from GitHub Actions:**
+1. Go to [Actions tab](https://github.com/arqma/arqma-storage-server/actions/workflows/build-static-binaries.yml)
+2. Click on the latest successful workflow run
+3. Scroll down to "Artifacts" section
+4. Download the binary for your platform
+
+**Available platforms:**
+- Linux Ubuntu 22.04 (x86_64)
+- Linux Ubuntu 24.04 (x86_64)
+- macOS ARM64 (M1/M2/M3)
+- macOS Intel (x86_64)
+- Windows (x86_64)
 
 ## Requirements
 
