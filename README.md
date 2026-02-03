@@ -1,57 +1,128 @@
 # arqma-storage-server
 Storage server for Arqma Service Nodes
 
-Requirements:
-all required dependencies sources are downloaded and platform specific build mode is included to main build process.
-as well as submodules update.
+## Requirements
 
-Building from git clone:
+All required dependencies are downloaded and built automatically as part of the build process.
+Platform-specific build modes are included.
+
+### System Requirements
+
+**Ubuntu 22.04 / 24.04:**
+```bash
+sudo apt-get install -y build-essential cmake git
 ```
+
+**macOS:**
+```bash
+# Xcode Command Line Tools required
+xcode-select --install
+```
+
+## Building from Source
+
+### Quick Start
+```bash
 git clone https://github.com/arqma/arqma-storage-server.git
 cd arqma-storage-server
-make all
+make release-all
 ```
 
-Compiled program will be build inside
-```
-binaries
-```
-folder :)
+The compiled binary will be in the `binaries/` folder.
 
-To run the storage-server:
-```
-./arqma-storage <public IP> <port> --arqmad-rpc-port <port at which arqmad is listening>
-```
-Replace the 0.0.0.0 with your IP of the hardware running the Storage-Server
-Ensure your ports are open to allow communication to other network Storage-servers
-The paths for Boost and OpenSSL can be specified by exporting the variables in the terminal before running make:
+### Build Options
 
-```
-export OPENSSL_ROOT_DIR = ...
-export BOOST_ROOT= ...
+**Option 1: Static dependencies (recommended)**
+```bash
+make release-all
 ```
 
-To get command line options just run:
-```
-./arqma-storage --help
+**Option 2: System libraries (Ubuntu only)**
+```bash
+mkdir -p build/release && cd build/release
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_DEPS=OFF ../..
+make -j$(nproc)
 ```
 
-Then using something like Postman (https://www.getpostman.com/) you can hit the API:
+**Debug build:**
+```bash
+make debug-all
+```
 
-# post data
+## Running the Storage Server
+
+Basic usage:
+```bash
+./binaries/arqma-storage <public IP> <port> --arqmad-rpc-port <arqmad RPC port>
 ```
-HTTP POST http://127.0.0.1/store
-body: "hello world"
-headers:
-- X-Arqma-recipient: "mypubkey"
-- X-Arqma-ttl: "86400"
-- X-Arqma-timestamp: "1540860811000"
-- X-Arqma-pow-nonce: "xxxx..."
+
+Example:
+```bash
+./binaries/arqma-storage 0.0.0.0 8080 --arqmad-rpc-port 19994
 ```
-# get data
+
+**Important:**
+- Replace `0.0.0.0` with your server's public IP
+- Ensure ports are open for communication with other storage servers
+- The `--arqmad-rpc-port` should match your arqmad daemon's RPC port
+
+For all available options:
+```bash
+./binaries/arqma-storage --help
 ```
-HTTP GET http://127.0.0.1/retrieve
-headers:
-- X-Arqma-recipient: "mypubkey"
-- X-Arqma-last-hash: "" (optional)
+
+## API Usage
+
+You can interact with the API using tools like curl or Postman (https://www.getpostman.com/).
+
+### Store Data
+```http
+POST http://127.0.0.1:8080/store
+Content-Type: text/plain
+
+Headers:
+  X-Arqma-recipient: "recipient_public_key"
+  X-Arqma-ttl: "86400"
+  X-Arqma-timestamp: "1540860811000"
+  X-Arqma-pow-nonce: "proof_of_work_nonce"
+
+Body:
+  "hello world"
 ```
+
+### Retrieve Data
+```http
+GET http://127.0.0.1:8080/retrieve
+
+Headers:
+  X-Arqma-recipient: "recipient_public_key"
+  X-Arqma-last-hash: "" (optional)
+```
+
+## Documentation
+
+- **[BUILD_REPORT.md](BUILD_REPORT.md)** - Detailed build analysis and warnings
+- **[UBUNTU_COMPATIBILITY.md](UBUNTU_COMPATIBILITY.md)** - Ubuntu 22.04/24.04 compatibility guide
+- **[cmake/MACOS_BUILD_FIX.md](cmake/MACOS_BUILD_FIX.md)** - macOS build fixes and technical details
+
+## Platform Support
+
+- ✅ **Ubuntu 22.04 LTS** - Fully supported
+- ✅ **Ubuntu 24.04 LTS** - Fully supported
+- ✅ **macOS** (ARM64 & x86_64) - Fully supported
+
+## Troubleshooting
+
+### macOS with Homebrew binutils
+If you have Homebrew's binutils installed and encounter linker errors, the build system automatically uses native Apple tools. No action required.
+
+### Ubuntu System Libraries
+If you prefer using system libraries instead of building static dependencies:
+```bash
+sudo apt-get install -y libssl-dev libboost-all-dev libsodium-dev libsqlite3-dev
+cmake -DBUILD_STATIC_DEPS=OFF ...
+```
+
+## License
+
+See [LICENSE](LICENSE) file for details.
