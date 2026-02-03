@@ -16,12 +16,14 @@ Pre-built static binaries are automatically compiled for multiple platforms on e
 4. Download the binary for your platform
 
 **Available platforms:**
-- Linux Ubuntu 22.04 (x86_64)
-- Linux Ubuntu 24.04 (x86_64)
-- macOS ARM64 (M1/M2/M3)
-- Windows (x86_64)
+- Linux Ubuntu 22.04 (x86_64) - Static binary
+- Linux Ubuntu 24.04 (x86_64) - Static binary
+- macOS ARM64 (M1/M2/M3) - Static binary
+- Windows (x86_64) - Binary with required DLLs
 
-**Note:** macOS Intel (x86_64) users should build from source locally.
+**Notes:** 
+- macOS Intel (x86_64) users should build from source locally
+- Windows builds include required MSYS2 DLLs in the package
 
 ## Requirements
 

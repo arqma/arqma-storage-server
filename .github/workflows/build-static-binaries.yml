@@ -115,14 +115,14 @@ jobs:
             mingw-w64-x86_64-libsodium
             git
       
-      - name: Build static binary
+      - name: Build binary with system libraries
         shell: msys2 {0}
         run: |
           mkdir -p build/release
           cd build/release
           cmake -G "MSYS Makefiles" \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_STATIC_DEPS=ON \
+            -DBUILD_STATIC_DEPS=OFF \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.18 \
             -DDISABLE_SNODE_SIGNATURE=OFF \
             ../..
@@ -135,13 +135,22 @@ jobs:
           ldd binaries/arqma-storage.exe || true
           ls -lh binaries/arqma-storage.exe
       
-      - name: Create artifact
+      - name: Copy required DLLs
         shell: msys2 {0}
         run: |
           mkdir -p artifacts
-          cp binaries/arqma-storage.exe artifacts/arqma-storage-windows-x86_64.exe
+          cp binaries/arqma-storage.exe artifacts/
+          
+          # Copy required DLLs from MSYS2
+          ldd binaries/arqma-storage.exe | grep mingw64 | awk '{print $3}' | xargs -I {} cp {} artifacts/
+          
+          ls -lh artifacts/
+      
+      - name: Create artifact
+        shell: msys2 {0}
+        run: |
           cd artifacts
-          7z a arqma-storage-windows-x86_64.zip arqma-storage-windows-x86_64.exe
+          7z a arqma-storage-windows-x86_64.zip *
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4

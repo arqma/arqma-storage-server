@@ -64,15 +64,19 @@ Each platform has specific requirements handled automatically by the workflow:
 - build-essential
 - cmake
 - git
+- Builds fully static binaries (BUILD_STATIC_DEPS=ON)
 
 **macOS:**
 - Xcode Command Line Tools (pre-installed on runners)
 - cmake (installed via Homebrew)
+- Builds fully static binaries (BUILD_STATIC_DEPS=ON)
 
 **Windows:**
 - MSYS2 environment
 - MinGW-w64 toolchain
-- CMake and dependencies
+- CMake and system libraries (boost, openssl, sqlite3, libsodium)
+- Uses system libraries (BUILD_STATIC_DEPS=OFF)
+- Required DLLs are bundled with the executable
 
 ## Platform-Specific Notes
 
@@ -83,7 +87,9 @@ The workflow uses:
 - Intel (x86_64) builds are not supported in CI (users with Intel Macs should build locally)
 
 ### Windows
-Uses MSYS2/MinGW environment for building. The binary is statically linked where possible.
+Uses MSYS2/MinGW environment for building. 
+
+**Note:** Windows builds use system libraries (BUILD_STATIC_DEPS=OFF) due to Boost bootstrap compatibility issues in MSYS2. Required DLLs are automatically included in the artifact package.
 
 ### Linux
 Builds fully static binaries using the project's static dependency system.
