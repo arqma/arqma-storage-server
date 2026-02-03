@@ -17,6 +17,11 @@ class Timer;
 
 namespace arqma {
 
+// Undefine Windows macro that conflicts with our enum
+#ifdef IGNORE
+#undef IGNORE
+#endif
+
 class Database {
   public:
     Database(boost::asio::io_context& ioc, const std::string& db_path);
