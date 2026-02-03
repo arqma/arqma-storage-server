@@ -12,7 +12,6 @@ Automatically builds static binaries for multiple platforms on every push to `de
 - **Linux Ubuntu 22.04** (x86_64)
 - **Linux Ubuntu 24.04** (x86_64)
 - **macOS ARM64** (Apple Silicon M1/M2/M3)
-- **macOS x86_64** (Intel)
 - **Windows** (x86_64)
 
 **Triggers:**
@@ -24,7 +23,6 @@ Automatically builds static binaries for multiple platforms on every push to `de
 Each build produces a compressed artifact containing the static binary:
 - Linux: `arqma-storage-linux-ubuntu-{version}-x86_64.tar.gz`
 - macOS ARM64: `arqma-storage-macos-arm64.tar.gz`
-- macOS Intel: `arqma-storage-macos-x86_64.tar.gz`
 - Windows: `arqma-storage-windows-x86_64.zip`
 
 **Artifact Retention:** 30 days
@@ -80,9 +78,9 @@ Each platform has specific requirements handled automatically by the workflow:
 
 ### macOS
 The workflow uses:
-- `macos-14` for ARM64 (Apple Silicon)
-- `macos-13` for x86_64 (Intel)
+- `macos-14` for ARM64 (Apple Silicon M1/M2/M3)
 - Forces native Apple tools to avoid GNU binutils conflicts
+- Intel (x86_64) builds are not supported in CI (users with Intel Macs should build locally)
 
 ### Windows
 Uses MSYS2/MinGW environment for building. The binary is statically linked where possible.

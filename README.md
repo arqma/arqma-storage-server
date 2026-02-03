@@ -19,8 +19,9 @@ Pre-built static binaries are automatically compiled for multiple platforms on e
 - Linux Ubuntu 22.04 (x86_64)
 - Linux Ubuntu 24.04 (x86_64)
 - macOS ARM64 (M1/M2/M3)
-- macOS Intel (x86_64)
 - Windows (x86_64)
+
+**Note:** macOS Intel (x86_64) users should build from source locally.
 
 ## Requirements
 
@@ -128,9 +129,11 @@ Headers:
 
 ## Platform Support
 
-- ✅ **Ubuntu 22.04 LTS** - Fully supported
-- ✅ **Ubuntu 24.04 LTS** - Fully supported
-- ✅ **macOS** (ARM64 & x86_64) - Fully supported
+- ✅ **Ubuntu 22.04 LTS** - Fully supported (pre-built binaries available)
+- ✅ **Ubuntu 24.04 LTS** - Fully supported (pre-built binaries available)
+- ✅ **macOS ARM64** (M1/M2/M3) - Fully supported (pre-built binaries available)
+- ✅ **macOS Intel** (x86_64) - Fully supported (build from source)
+- ✅ **Windows** (x86_64) - Fully supported (pre-built binaries available)
 
 ## Troubleshooting
 

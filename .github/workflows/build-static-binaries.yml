@@ -90,45 +90,6 @@ jobs:
           path: artifacts/*.tar.gz
           retention-days: 30
 
-  build-macos-intel:
-    name: Build macOS x86_64 (Intel)
-    runs-on: macos-13  # macOS 13 runs on Intel
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
-      - name: Install dependencies
-        run: |
-          brew install cmake
-      
-      - name: Build static binary
-        run: |
-          # Force use of native macOS tools
-          PATH="/usr/bin:$PATH" make release-all
-      
-      - name: Verify binary
-        run: |
-          file binaries/arqma-storage
-          otool -L binaries/arqma-storage || true
-          ls -lh binaries/arqma-storage
-      
-      - name: Create artifact
-        run: |
-          mkdir -p artifacts
-          cp binaries/arqma-storage artifacts/arqma-storage-macos-x86_64
-          cd artifacts
-          tar -czf arqma-storage-macos-x86_64.tar.gz arqma-storage-macos-x86_64
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: arqma-storage-macos-x86_64
-          path: artifacts/*.tar.gz
-          retention-days: 30
-
   build-windows:
     name: Build Windows
     runs-on: windows-latest
@@ -191,7 +152,7 @@ jobs:
 
   create-release:
     name: Create Release Summary
-    needs: [build-linux, build-macos, build-macos-intel, build-windows]
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     
@@ -216,8 +177,7 @@ jobs:
           echo "" >> summary.md
           echo "- Ubuntu 22.04 (x86_64)" >> summary.md
           echo "- Ubuntu 24.04 (x86_64)" >> summary.md
-          echo "- macOS ARM64 (M1/M2)" >> summary.md
-          echo "- macOS x86_64 (Intel)" >> summary.md
+          echo "- macOS ARM64 (M1/M2/M3)" >> summary.md
           echo "- Windows x86_64" >> summary.md
           cat summary.md
       
