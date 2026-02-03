@@ -147,12 +147,14 @@ uint64_t uniform_distribution_portable(std::mt19937_64& mersenne_twister,
 }
 
 int get_fd_limit() {
-
 #ifdef _WIN32
-  return -1;
-#endif
-
+  // Windows doesn't have a direct equivalent to POSIX RLIMIT_NOFILE
+  // _getmaxstdio() returns the maximum number of simultaneously open stdio files
+  // Default is 512, max is 8192 for Windows
+  return 2048; // Conservative default for Windows
+#else
   return sysconf(_SC_OPEN_MAX);
+#endif
 }
 
 } // namespace util
