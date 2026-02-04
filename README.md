@@ -19,11 +19,20 @@ Pre-built static binaries are automatically compiled for multiple platforms on e
 - Linux Ubuntu 22.04 (x86_64) - Static binary
 - Linux Ubuntu 24.04 (x86_64) - Static binary
 - macOS ARM64 (M1/M2/M3) - Static binary
-- Windows (x86_64) - Binary with required DLLs
 
 **Notes:** 
 - macOS Intel (x86_64) users should build from source locally
-- Windows builds include required MSYS2 DLLs in the package
+- Windows builds are temporarily disabled (build from source using WSL2/MSYS2)
+
+## Releases
+
+### Stable Releases
+When a version tag is pushed (e.g., `v1.0.0`), a GitHub Release is automatically created with binaries for all supported platforms.
+
+### Development Builds
+The `dev` branch automatically creates a pre-release tagged as `dev-latest` with the latest development binaries. This is updated on every push to `dev`.
+
+**Download latest dev build:** [dev-latest release](https://github.com/arqma/arqma-storage-server/releases/tag/dev-latest)
 
 ## Requirements
 
@@ -131,11 +140,11 @@ Headers:
 
 ## Platform Support
 
-- ✅ **Ubuntu 22.04 LTS** - Fully supported (pre-built binaries available)
-- ✅ **Ubuntu 24.04 LTS** - Fully supported (pre-built binaries available)
-- ✅ **macOS ARM64** (M1/M2/M3) - Fully supported (pre-built binaries available)
+- ✅ **Ubuntu 22.04 LTS** - Fully supported (pre-built static binaries)
+- ✅ **Ubuntu 24.04 LTS** - Fully supported (pre-built static binaries)
+- ✅ **macOS ARM64** (M1/M2/M3) - Fully supported (pre-built static binaries)
 - ✅ **macOS Intel** (x86_64) - Fully supported (build from source)
-- ✅ **Windows** (x86_64) - Fully supported (pre-built binaries available)
+- ⏸️ **Windows** (x86_64) - Temporarily disabled (build from source using WSL2/MSYS2)
 
 ## Troubleshooting
 

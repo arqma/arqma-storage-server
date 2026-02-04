@@ -9,10 +9,11 @@ This directory contains automated CI/CD workflows for the ARQMA Storage Server p
 Automatically builds static binaries for multiple platforms on every push to `dev` or `master` branches.
 
 **Supported Platforms:**
-- **Linux Ubuntu 22.04** (x86_64)
-- **Linux Ubuntu 24.04** (x86_64)
-- **macOS ARM64** (Apple Silicon M1/M2/M3)
-- **Windows** (x86_64)
+- **Linux Ubuntu 22.04** (x86_64) - Static binary
+- **Linux Ubuntu 24.04** (x86_64) - Static binary
+- **macOS ARM64** (Apple Silicon M1/M2/M3) - Static binary
+
+**Note:** Windows builds are temporarily disabled pending build system improvements.
 
 **Triggers:**
 - Push to `dev` or `master` branch
@@ -23,7 +24,10 @@ Automatically builds static binaries for multiple platforms on every push to `de
 Each build produces a compressed artifact containing the static binary:
 - Linux: `arqma-storage-linux-ubuntu-{version}-x86_64.tar.gz`
 - macOS ARM64: `arqma-storage-macos-arm64.tar.gz`
-- Windows: `arqma-storage-windows-x86_64.zip`
+
+**Releases:**
+- **Tags** (e.g., `v1.0.0`): Creates a GitHub Release with all binaries
+- **dev branch**: Automatically updates `dev-latest` pre-release tag
 
 **Artifact Retention:** 30 days
 
@@ -71,13 +75,6 @@ Each platform has specific requirements handled automatically by the workflow:
 - cmake (installed via Homebrew)
 - Builds fully static binaries (BUILD_STATIC_DEPS=ON)
 
-**Windows:**
-- MSYS2 environment
-- MinGW-w64 toolchain
-- CMake and system libraries (boost, openssl, sqlite3, libsodium)
-- Uses system libraries (BUILD_STATIC_DEPS=OFF)
-- Required DLLs are bundled with the executable
-
 ## Platform-Specific Notes
 
 ### macOS
@@ -86,10 +83,12 @@ The workflow uses:
 - Forces native Apple tools to avoid GNU binutils conflicts
 - Intel (x86_64) builds are not supported in CI (users with Intel Macs should build locally)
 
-### Windows
-Uses MSYS2/MinGW environment for building. 
+### Windows (Temporarily Disabled)
+Windows builds have been temporarily disabled while build system improvements are being developed.
 
-**Note:** Windows builds use system libraries (BUILD_STATIC_DEPS=OFF) due to Boost bootstrap compatibility issues in MSYS2. Required DLLs are automatically included in the artifact package.
+**Status:** In progress
+**Expected:** Future release
+**Workaround:** Windows users can build from source locally using WSL2 or MSYS2
 
 ### Linux
 Builds fully static binaries using the project's static dependency system.
