@@ -3,6 +3,8 @@ name: Build Static Binaries
 on:
   push:
     branches: [ dev, master ]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [ dev, master ]
   workflow_dispatch:
@@ -143,6 +145,53 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  auto-release-master:
+    name: Auto-release on master merge
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest tag and increment version
+        id: version
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # Extract version numbers
+          VERSION=${LATEST_TAG#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          
+          # Increment minor version
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="v${MAJOR}.${NEW_MINOR}.0"
+          
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Create and push tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }} - Auto-created from master merge"
+          git push origin ${{ steps.version.outputs.version }}
+      
+      - name: Wait for tag workflow
+        run: |
+          echo "Tag ${{ steps.version.outputs.version }} created successfully!"
+          echo "The release workflow will be triggered automatically by the tag push."
+          echo "Check: https://github.com/${{ github.repository }}/releases"
 
   create-release:
     name: Create Release (tags)

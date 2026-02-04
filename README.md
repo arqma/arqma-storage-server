@@ -26,13 +26,27 @@ Pre-built static binaries are automatically compiled for multiple platforms on e
 
 ## Releases
 
-### Stable Releases
-When a version tag is pushed (e.g., `v1.0.0`), a GitHub Release is automatically created with binaries for all supported platforms.
+### Stable Releases (Automatic)
+When `dev` branch is merged to `master`, a new release is **automatically created**:
+1. The workflow detects the merge to master
+2. Increments the version (e.g., `v1.0.0` → `v1.1.0`)
+3. Creates a version tag
+4. Builds binaries for all platforms
+5. Creates a GitHub Release with all binaries
 
-### Development Builds
+**No manual tagging needed!** Just merge dev → master.
+
+### Development Builds (Pre-release)
 The `dev` branch automatically creates a pre-release tagged as `dev-latest` with the latest development binaries. This is updated on every push to `dev`.
 
 **Download latest dev build:** [dev-latest release](https://github.com/arqma/arqma-storage-server/releases/tag/dev-latest)
+
+### Release Workflow
+```
+Dev work → Push to dev → Creates dev-latest pre-release
+     ↓
+Merge dev → master → Auto-creates v1.1.0 tag → Creates stable release
+```
 
 ## Requirements
 

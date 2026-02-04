@@ -28,6 +28,7 @@ Each build produces a compressed artifact containing the static binary:
 **Releases:**
 - **Tags** (e.g., `v1.0.0`): Creates a GitHub Release with all binaries
 - **dev branch**: Automatically updates `dev-latest` pre-release tag
+- **master branch**: Automatically creates new version tag and release when dev is merged
 
 **Artifact Retention:** 30 days
 
