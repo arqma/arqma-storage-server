@@ -47,6 +47,15 @@ file(MAKE_DIRECTORY ${DEPS_DESTDIR}/include)
 set(deps_cc "${CMAKE_C_COMPILER}")
 set(deps_cxx "${CMAKE_CXX_COMPILER}")
 
+# Force using native macOS ar and ranlib instead of GNU binutils versions
+if(APPLE)
+  set(deps_ar "/usr/bin/ar")
+  set(deps_ranlib "/usr/bin/ranlib")
+else()
+  set(deps_ar "ar")
+  set(deps_ranlib "ranlib")
+endif()
+
 if(CMAKE_C_COMPILER_LAUNCHER)
   set(deps_cc "${CMAKE_C_COMPILER_LAUNCHER} ${deps_cc}")
 endif()
@@ -139,9 +148,14 @@ function(build_external target)
 endfunction()
 
 set(openssl_patch_commands "")
+set(openssl_sed "")
+set(openssl_ranlib_env "")
+set(openssl_ar_env "")
 if(APPLE)
   set(openssl_patch_commands PATCH_COMMAND patch -p1 -i ${PROJECT_SOURCE_DIR}/cmake/conf.patch)
   set(openssl_configure ./Configure darwin64-arm64-cc)
+  set(openssl_ranlib_env RANLIB=${deps_ranlib})
+  set(openssl_ar_env AR=${deps_ar})
 else()
   set(openssl_configure ./config)
 endif()
@@ -168,12 +182,12 @@ if(CMAKE_CROSSCOMPILING)
 endif()
 build_external(openssl
   ${openssl_patch_commands}
-  CONFIGURE_COMMAND ${openssl_sed} ${CMAKE_COMMAND} -E env CC=${openssl_cc} ${openssl_system_env} ${openssl_configure}
+  CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${openssl_cc} ${openssl_ar_env} ${openssl_ranlib_env} ${openssl_system_env} ${openssl_configure}
     --prefix=${DEPS_DESTDIR} --openssldir=${DEPS_DESTDIR}/etc/openssl ${openssl_extra_opts} no-shared no-capieng no-dso no-dtls1 no-ec_nistp_64_gcc_128 no-gost
     no-heartbeats no-md2 no-rc5 no-rdrand no-rfc3779 no-sctp no-ssl-trace no-ssl2 no-ssl3
     no-static-engine no-tests no-weak-ssl-ciphers no-zlib-dynamic
-  BUILD_COMMAND make build_libs
-  INSTALL_COMMAND make install_sw
+  BUILD_COMMAND ${CMAKE_COMMAND} -E env ${openssl_ar_env} ${openssl_ranlib_env} make build_libs
+  INSTALL_COMMAND ${CMAKE_COMMAND} -E env ${openssl_ar_env} ${openssl_ranlib_env} make install_sw
   BUILD_BYPRODUCTS
     ${DEPS_DESTDIR}/lib/libssl.a ${DEPS_DESTDIR}/lib/libcrypto.a
     ${DEPS_DESTDIR}/include/openssl/ssl.h ${DEPS_DESTDIR}/include/openssl/crypto.h

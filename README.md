@@ -1,57 +1,193 @@
 # arqma-storage-server
+
+[![Build Static Binaries](https://github.com/arqma/arqma-storage-server/actions/workflows/build-static-binaries.yml/badge.svg?branch=dev)](https://github.com/arqma/arqma-storage-server/actions/workflows/build-static-binaries.yml)
+[![Docker Image CI](https://github.com/arqma/arqma-storage-server/actions/workflows/docker-image.yml/badge.svg)](https://github.com/arqma/arqma-storage-server/actions/workflows/docker-image.yml)
+
 Storage server for Arqma Service Nodes
 
-Requirements:
-all required dependencies sources are downloaded and platform specific build mode is included to main build process.
-as well as submodules update.
+## Download Pre-built Binaries
 
-Building from git clone:
+Pre-built static binaries are automatically compiled for multiple platforms on every push to the `dev` branch.
+
+**Download from GitHub Actions:**
+1. Go to [Actions tab](https://github.com/arqma/arqma-storage-server/actions/workflows/build-static-binaries.yml)
+2. Click on the latest successful workflow run
+3. Scroll down to "Artifacts" section
+4. Download the binary for your platform
+
+**Available platforms:**
+- Linux Ubuntu 22.04 (x86_64) - Static binary
+- Linux Ubuntu 24.04 (x86_64) - Static binary
+- macOS ARM64 (M1/M2/M3) - Static binary
+
+**Notes:** 
+- macOS Intel (x86_64) users should build from source locally
+- Windows builds are temporarily disabled (build from source using WSL2/MSYS2)
+
+## Releases
+
+### Stable Releases (Controlled Process)
+Creating a new release requires approval from @malbit:
+
+1. **Create Release PR** (manual trigger):
+   - Go to [Actions → Create Release PR](https://github.com/arqma/arqma-storage-server/actions/workflows/create-release-pr.yml)
+   - Click "Run workflow"
+   - Select version bump type (minor/major/patch)
+   - Workflow creates PR from `dev` to `master`
+
+2. **Review & Approve**:
+   - @malbit reviews the PR
+   - Checks changelog and changes
+   - Approves and merges PR
+
+3. **Automatic Release**:
+   - After PR merge to master, workflow automatically:
+     - Creates version tag (e.g., `v1.1.0`)
+     - Builds binaries for all platforms
+     - Creates GitHub Release with all artifacts
+
+### Development Builds (Pre-release)
+The `dev` branch automatically creates a pre-release tagged as `dev-latest` with the latest development binaries. This is updated on every push to `dev`.
+
+**Download latest dev build:** [dev-latest release](https://github.com/arqma/arqma-storage-server/releases/tag/dev-latest)
+
+### Release Workflow
 ```
+Dev work → Push to dev → Creates dev-latest pre-release
+     ↓
+Manual: Trigger "Create Release PR" workflow
+     ↓
+PR created: dev → master (requires @malbit approval)
+     ↓
+@malbit reviews and approves PR
+     ↓
+Merge PR → Auto-creates v1.1.0 tag → Builds & creates release
+```
+
+## Requirements
+
+All required dependencies are downloaded and built automatically as part of the build process.
+Platform-specific build modes are included.
+
+### System Requirements
+
+**Ubuntu 22.04 / 24.04:**
+```bash
+sudo apt-get install -y build-essential cmake git
+```
+
+**macOS:**
+```bash
+# Xcode Command Line Tools required
+xcode-select --install
+```
+
+## Building from Source
+
+### Quick Start
+```bash
 git clone https://github.com/arqma/arqma-storage-server.git
 cd arqma-storage-server
-make all
+make release-all
 ```
 
-Compiled program will be build inside
-```
-binaries
-```
-folder :)
+The compiled binary will be in the `binaries/` folder.
 
-To run the storage-server:
-```
-./arqma-storage <public IP> <port> --arqmad-rpc-port <port at which arqmad is listening>
-```
-Replace the 0.0.0.0 with your IP of the hardware running the Storage-Server
-Ensure your ports are open to allow communication to other network Storage-servers
-The paths for Boost and OpenSSL can be specified by exporting the variables in the terminal before running make:
+### Build Options
 
-```
-export OPENSSL_ROOT_DIR = ...
-export BOOST_ROOT= ...
+**Option 1: Static dependencies (recommended)**
+```bash
+make release-all
 ```
 
-To get command line options just run:
-```
-./arqma-storage --help
+**Option 2: System libraries (Ubuntu only)**
+```bash
+mkdir -p build/release && cd build/release
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_DEPS=OFF ../..
+make -j$(nproc)
 ```
 
-Then using something like Postman (https://www.getpostman.com/) you can hit the API:
+**Debug build:**
+```bash
+make debug-all
+```
 
-# post data
+## Running the Storage Server
+
+Basic usage:
+```bash
+./binaries/arqma-storage <public IP> <port> --arqmad-rpc-port <arqmad RPC port>
 ```
-HTTP POST http://127.0.0.1/store
-body: "hello world"
-headers:
-- X-Arqma-recipient: "mypubkey"
-- X-Arqma-ttl: "86400"
-- X-Arqma-timestamp: "1540860811000"
-- X-Arqma-pow-nonce: "xxxx..."
+
+Example:
+```bash
+./binaries/arqma-storage 0.0.0.0 8080 --arqmad-rpc-port 19994
 ```
-# get data
+
+**Important:**
+- Replace `0.0.0.0` with your server's public IP
+- Ensure ports are open for communication with other storage servers
+- The `--arqmad-rpc-port` should match your arqmad daemon's RPC port
+
+For all available options:
+```bash
+./binaries/arqma-storage --help
 ```
-HTTP GET http://127.0.0.1/retrieve
-headers:
-- X-Arqma-recipient: "mypubkey"
-- X-Arqma-last-hash: "" (optional)
+
+## API Usage
+
+You can interact with the API using tools like curl or Postman (https://www.getpostman.com/).
+
+### Store Data
+```http
+POST http://127.0.0.1:8080/store
+Content-Type: text/plain
+
+Headers:
+  X-Arqma-recipient: "recipient_public_key"
+  X-Arqma-ttl: "86400"
+  X-Arqma-timestamp: "1540860811000"
+  X-Arqma-pow-nonce: "proof_of_work_nonce"
+
+Body:
+  "hello world"
 ```
+
+### Retrieve Data
+```http
+GET http://127.0.0.1:8080/retrieve
+
+Headers:
+  X-Arqma-recipient: "recipient_public_key"
+  X-Arqma-last-hash: "" (optional)
+```
+
+## Documentation
+
+- **[BUILD_REPORT.md](BUILD_REPORT.md)** - Detailed build analysis and warnings
+- **[UBUNTU_COMPATIBILITY.md](UBUNTU_COMPATIBILITY.md)** - Ubuntu 22.04/24.04 compatibility guide
+- **[cmake/MACOS_BUILD_FIX.md](cmake/MACOS_BUILD_FIX.md)** - macOS build fixes and technical details
+
+## Platform Support
+
+- ✅ **Ubuntu 22.04 LTS** - Fully supported (pre-built static binaries)
+- ✅ **Ubuntu 24.04 LTS** - Fully supported (pre-built static binaries)
+- ✅ **macOS ARM64** (M1/M2/M3) - Fully supported (pre-built static binaries)
+- ✅ **macOS Intel** (x86_64) - Fully supported (build from source)
+- ⏸️ **Windows** (x86_64) - Temporarily disabled (build from source using WSL2/MSYS2)
+
+## Troubleshooting
+
+### macOS with Homebrew binutils
+If you have Homebrew's binutils installed and encounter linker errors, the build system automatically uses native Apple tools. No action required.
+
+### Ubuntu System Libraries
+If you prefer using system libraries instead of building static dependencies:
+```bash
+sudo apt-get install -y libssl-dev libboost-all-dev libsodium-dev libsqlite3-dev
+cmake -DBUILD_STATIC_DEPS=OFF ...
+```
+
+## License
+
+See [LICENSE](LICENSE) file for details.

@@ -1,0 +1,262 @@
+name: Build Static Binaries
+
+on:
+  push:
+    branches: [ dev, master ]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [ dev, master ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build Linux (${{ matrix.ubuntu }})
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['22.04', '24.04']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git
+      
+      - name: Build static binary
+        run: |
+          make release-all
+      
+      - name: Verify binary
+        run: |
+          file binaries/arqma-storage
+          ldd binaries/arqma-storage || true
+          ls -lh binaries/arqma-storage
+      
+      - name: Create artifact
+        run: |
+          mkdir -p artifacts
+          cp binaries/arqma-storage artifacts/arqma-storage
+          cd artifacts
+          tar -czf arqma-storage-linux-ubuntu-${{ matrix.ubuntu }}-$(uname -m).tar.gz arqma-storage
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arqma-storage-linux-ubuntu-${{ matrix.ubuntu }}-x86_64
+          path: artifacts/*.tar.gz
+          retention-days: 30
+
+  build-macos:
+    name: Build macOS ARM64 (M1/M2)
+    runs-on: macos-14  # macOS 14 runs on Apple Silicon
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install dependencies
+        run: |
+          brew install cmake
+      
+      - name: Build static binary
+        run: |
+          # Force use of native macOS tools
+          PATH="/usr/bin:$PATH" make release-all
+      
+      - name: Verify binary
+        run: |
+          file binaries/arqma-storage
+          otool -L binaries/arqma-storage || true
+          ls -lh binaries/arqma-storage
+      
+      - name: Create artifact
+        run: |
+          mkdir -p artifacts
+          cp binaries/arqma-storage artifacts/arqma-storage
+          cd artifacts
+          tar -czf arqma-storage-macos-arm64.tar.gz arqma-storage
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arqma-storage-macos-arm64
+          path: artifacts/*.tar.gz
+          retention-days: 30
+
+  create-prerelease:
+    name: Create Pre-release (dev branch)
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Prepare release files
+        run: |
+          cd artifacts
+          find . -type f -name "*.tar.gz" -o -name "*.zip" | while read file; do
+            cp "$file" ../
+          done
+          cd ..
+          ls -lh *.tar.gz *.zip 2>/dev/null || true
+      
+      - name: Generate release notes
+        run: |
+          echo "# Development Pre-release" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "**Branch:** dev" >> RELEASE_NOTES.md
+          echo "**Commit:** ${{ github.sha }}" >> RELEASE_NOTES.md
+          echo "**Build Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Platforms" >> RELEASE_NOTES.md
+          echo "- Linux Ubuntu 22.04 (x86_64) - Static binary" >> RELEASE_NOTES.md
+          echo "- Linux Ubuntu 24.04 (x86_64) - Static binary" >> RELEASE_NOTES.md
+          echo "- macOS ARM64 (M1/M2/M3) - Static binary" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "⚠️ **This is a development pre-release for testing purposes only.**" >> RELEASE_NOTES.md
+      
+      - name: Create or update pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: dev-latest
+          name: Development Build (Latest)
+          body_path: RELEASE_NOTES.md
+          files: |
+            *.tar.gz
+          prerelease: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  auto-tag-on-master:
+    name: Create version tag after PR merge to master
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest tag and increment version
+        id: version
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # Extract version numbers
+          VERSION=${LATEST_TAG#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          
+          # Increment minor version
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="v${MAJOR}.${NEW_MINOR}.0"
+          
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Create and push tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
+          git push origin ${{ steps.version.outputs.version }}
+          echo "✅ Tag ${{ steps.version.outputs.version }} created and pushed"
+          echo "Release workflow will be triggered automatically"
+
+  create-release:
+    name: Create Release (tags)
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Prepare release files
+        run: |
+          cd artifacts
+          find . -type f -name "*.tar.gz" | while read file; do
+            cp "$file" ../
+          done
+          cd ..
+          ls -lh *.tar.gz
+      
+      - name: Generate release notes
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "# ARQMA Storage Server $TAG_NAME" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Download" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "Choose the appropriate binary for your platform:" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### Linux" >> RELEASE_NOTES.md
+          echo "- **Ubuntu 22.04 (x86_64)**: \`arqma-storage-linux-ubuntu-22.04-x86_64.tar.gz\`" >> RELEASE_NOTES.md
+          echo "- **Ubuntu 24.04 (x86_64)**: \`arqma-storage-linux-ubuntu-24.04-x86_64.tar.gz\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### macOS" >> RELEASE_NOTES.md
+          echo "- **macOS ARM64 (M1/M2/M3)**: \`arqma-storage-macos-arm64.tar.gz\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Installation" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "\`\`\`bash" >> RELEASE_NOTES.md
+          echo "# Extract" >> RELEASE_NOTES.md
+          echo "tar -xzf arqma-storage-*.tar.gz" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "# Run" >> RELEASE_NOTES.md
+          echo "./arqma-storage <IP> <port> --arqmad-rpc-port <port>" >> RELEASE_NOTES.md
+          echo "\`\`\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Changes" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> RELEASE_NOTES.md 2>/dev/null || echo "Initial release" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "---" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/arqma/arqma-storage-server/compare/$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo 'initial')...$TAG_NAME" >> RELEASE_NOTES.md
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            *.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

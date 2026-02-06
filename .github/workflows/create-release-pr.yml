@@ -1,0 +1,127 @@
+name: Create Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'minor'
+        type: choice
+        options:
+          - minor
+          - major
+          - patch
+
+jobs:
+  create-pr:
+    name: Create PR from dev to master
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: dev
+      
+      - name: Get latest tag and calculate new version
+        id: version
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # Extract version numbers
+          VERSION=${LATEST_TAG#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          
+          # Increment version based on input (default: minor)
+          BUMP_TYPE="${{ github.event.inputs.version_bump || 'minor' }}"
+          
+          if [ "$BUMP_TYPE" = "major" ]; then
+            NEW_MAJOR=$((MAJOR + 1))
+            NEW_VERSION="v${NEW_MAJOR}.0.0"
+          elif [ "$BUMP_TYPE" = "patch" ]; then
+            NEW_PATCH=$((PATCH + 1))
+            NEW_VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+          else
+            # minor (default)
+            NEW_MINOR=$((MINOR + 1))
+            NEW_VERSION="v${MAJOR}.${NEW_MINOR}.0"
+          fi
+          
+          echo "New version: $NEW_VERSION"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "old_version=$LATEST_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Generate PR body
+        id: pr_body
+        run: |
+          cat > pr_body.md <<'EOF'
+          ## 🚀 Release ${{ steps.version.outputs.version }}
+          
+          This PR merges `dev` into `master` for the next release.
+          
+          ### 📋 Version Information
+          - **Previous version:** ${{ steps.version.outputs.old_version }}
+          - **New version:** ${{ steps.version.outputs.version }}
+          - **Bump type:** ${{ github.event.inputs.version_bump || 'minor' }}
+          
+          ### 📦 What happens after merge:
+          1. ✅ PR is approved by @malbit
+          2. ✅ PR is merged to master
+          3. ✅ Tag `${{ steps.version.outputs.version }}` is automatically created
+          4. ✅ Release workflow builds binaries for all platforms
+          5. ✅ GitHub Release `${{ steps.version.outputs.version }}` is created with artifacts
+          
+          ### 🔍 Changes since last release
+          EOF
+          
+          # Add commit log
+          echo "" >> pr_body.md
+          git log --pretty=format:"- %s (%h)" ${{ steps.version.outputs.old_version }}..HEAD >> pr_body.md || echo "- Initial release" >> pr_body.md
+          echo "" >> pr_body.md
+          echo "" >> pr_body.md
+          
+          # Add platform info
+          cat >> pr_body.md <<'EOF'
+          
+          ### 🖥️ Supported Platforms
+          - Linux Ubuntu 22.04 (x86_64) - Static binary
+          - Linux Ubuntu 24.04 (x86_64) - Static binary
+          - macOS ARM64 (M1/M2/M3) - Static binary
+          
+          ---
+          
+          **Review required:** @malbit
+          **After approval:** Merge will automatically create release ${{ steps.version.outputs.version }}
+          EOF
+          
+          cat pr_body.md
+      
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release/${{ steps.version.outputs.version }}
+          base: master
+          title: "Release ${{ steps.version.outputs.version }}"
+          body-path: pr_body.md
+          labels: |
+            release
+            automated
+          reviewers: malbit
+          draft: false
+      
+      - name: PR Created
+        run: |
+          echo "✅ Pull Request created successfully!"
+          echo "📋 PR title: Release ${{ steps.version.outputs.version }}"
+          echo "🎯 Reviewer: @malbit"
+          echo "📦 After merge, release will be created automatically"
