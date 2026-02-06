@@ -4,9 +4,33 @@ This directory contains automated CI/CD workflows for the ARQMA Storage Server p
 
 ## Workflows
 
-### 1. Build Static Binaries (`build-static-binaries.yml`)
+### 1. Create Release PR (`create-release-pr.yml`)
 
-Automatically builds static binaries for multiple platforms on every push to `dev` or `master` branches.
+**Purpose:** Creates a Pull Request from `dev` to `master` for controlled release process.
+
+**Trigger:** Manual (workflow_dispatch) from GitHub Actions tab
+
+**Process:**
+1. Detects latest version tag (e.g., `v1.0.0`)
+2. Calculates new version based on selected bump type:
+   - `minor` (default): v1.0.0 → v1.1.0
+   - `major`: v1.0.0 → v2.0.0
+   - `patch`: v1.0.0 → v1.0.1
+3. Creates PR from `dev` to `master`
+4. Generates changelog from commits since last release
+5. Assigns @malbit as required reviewer
+
+**How to use:**
+1. Go to [Actions → Create Release PR](https://github.com/arqma/arqma-storage-server/actions/workflows/create-release-pr.yml)
+2. Click "Run workflow"
+3. Select version bump type (minor/major/patch)
+4. Wait for PR to be created
+5. @malbit reviews and approves PR
+6. Merge PR to trigger automatic release
+
+### 2. Build Static Binaries (`build-static-binaries.yml`)
+
+Automatically builds static binaries for multiple platforms on every push to `dev` or `master` branches, and on version tag pushes.
 
 **Supported Platforms:**
 - **Linux Ubuntu 22.04** (x86_64) - Static binary
@@ -25,10 +49,17 @@ Each build produces a compressed artifact containing the static binary:
 - Linux: `arqma-storage-linux-ubuntu-{version}-x86_64.tar.gz`
 - macOS ARM64: `arqma-storage-macos-arm64.tar.gz`
 
-**Releases:**
-- **Tags** (e.g., `v1.0.0`): Creates a GitHub Release with all binaries
-- **dev branch**: Automatically updates `dev-latest` pre-release tag
-- **master branch**: Automatically creates new version tag and release when dev is merged
+**Jobs:**
+- `build-linux`: Builds for Ubuntu 22.04 and 24.04 (matrix)
+- `build-macos`: Builds for macOS ARM64 (M1/M2/M3)
+- `create-prerelease`: Creates/updates `dev-latest` pre-release (dev branch only)
+- `auto-tag-on-master`: Creates version tag after PR merge to master
+- `create-release`: Creates GitHub Release when version tag is pushed
+
+**Release Process:**
+1. **dev branch push** → Updates `dev-latest` pre-release
+2. **PR merge to master** → Auto-creates version tag (e.g., `v1.1.0`)
+3. **Tag push** → Builds binaries and creates GitHub Release
 
 **Artifact Retention:** 30 days
 
@@ -46,13 +77,33 @@ Builds Docker image on push to `master` branch.
 - Push to `master` branch
 - Pull requests to `master` branch
 
-## Development Workflow
+## Development & Release Workflow
 
-### Testing Changes
-1. Push changes to `dev` branch
-2. Wait for automated builds to complete
-3. Download and test artifacts
-4. Create PR to merge `dev` → `master`
+### Development Cycle
+1. **Work on dev branch**
+   ```bash
+   git checkout dev
+   git commit -m "Add feature"
+   git push origin dev
+   ```
+2. **Automatic dev-latest pre-release** is created/updated
+3. Test the pre-release binaries
+
+### Creating a Stable Release
+1. **Trigger Release PR workflow**
+   - Go to Actions → Create Release PR
+   - Click "Run workflow"
+   - Select version bump type (minor/major/patch)
+   
+2. **Review Process**
+   - PR is created: `dev` → `master`
+   - @malbit reviews the changelog
+   - @malbit approves and merges PR
+   
+3. **Automatic Release**
+   - After PR merge, tag is created automatically
+   - Binaries are built for all platforms
+   - GitHub Release is created with all artifacts
 
 ### Manual Trigger
 You can manually trigger the build workflow:

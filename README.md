@@ -26,15 +26,25 @@ Pre-built static binaries are automatically compiled for multiple platforms on e
 
 ## Releases
 
-### Stable Releases (Automatic)
-When `dev` branch is merged to `master`, a new release is **automatically created**:
-1. The workflow detects the merge to master
-2. Increments the version (e.g., `v1.0.0` → `v1.1.0`)
-3. Creates a version tag
-4. Builds binaries for all platforms
-5. Creates a GitHub Release with all binaries
+### Stable Releases (Controlled Process)
+Creating a new release requires approval from @malbit:
 
-**No manual tagging needed!** Just merge dev → master.
+1. **Create Release PR** (manual trigger):
+   - Go to [Actions → Create Release PR](https://github.com/arqma/arqma-storage-server/actions/workflows/create-release-pr.yml)
+   - Click "Run workflow"
+   - Select version bump type (minor/major/patch)
+   - Workflow creates PR from `dev` to `master`
+
+2. **Review & Approve**:
+   - @malbit reviews the PR
+   - Checks changelog and changes
+   - Approves and merges PR
+
+3. **Automatic Release**:
+   - After PR merge to master, workflow automatically:
+     - Creates version tag (e.g., `v1.1.0`)
+     - Builds binaries for all platforms
+     - Creates GitHub Release with all artifacts
 
 ### Development Builds (Pre-release)
 The `dev` branch automatically creates a pre-release tagged as `dev-latest` with the latest development binaries. This is updated on every push to `dev`.
@@ -45,7 +55,13 @@ The `dev` branch automatically creates a pre-release tagged as `dev-latest` with
 ```
 Dev work → Push to dev → Creates dev-latest pre-release
      ↓
-Merge dev → master → Auto-creates v1.1.0 tag → Creates stable release
+Manual: Trigger "Create Release PR" workflow
+     ↓
+PR created: dev → master (requires @malbit approval)
+     ↓
+@malbit reviews and approves PR
+     ↓
+Merge PR → Auto-creates v1.1.0 tag → Builds & creates release
 ```
 
 ## Requirements

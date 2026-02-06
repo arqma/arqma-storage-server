@@ -146,9 +146,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  auto-release-master:
-    name: Auto-release on master merge
-    needs: [build-linux, build-macos]
+  auto-tag-on-master:
+    name: Create version tag after PR merge to master
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
@@ -184,14 +183,10 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }} - Auto-created from master merge"
+          git tag -a ${{ steps.version.outputs.version }} -m "Release ${{ steps.version.outputs.version }}"
           git push origin ${{ steps.version.outputs.version }}
-      
-      - name: Wait for tag workflow
-        run: |
-          echo "Tag ${{ steps.version.outputs.version }} created successfully!"
-          echo "The release workflow will be triggered automatically by the tag push."
-          echo "Check: https://github.com/${{ github.repository }}/releases"
+          echo "✅ Tag ${{ steps.version.outputs.version }} created and pushed"
+          echo "Release workflow will be triggered automatically"
 
   create-release:
     name: Create Release (tags)
