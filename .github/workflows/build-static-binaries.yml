@@ -42,9 +42,9 @@ jobs:
       - name: Create artifact
         run: |
           mkdir -p artifacts
-          cp binaries/arqma-storage artifacts/arqma-storage-linux-ubuntu-${{ matrix.ubuntu }}-$(uname -m)
+          cp binaries/arqma-storage artifacts/arqma-storage
           cd artifacts
-          tar -czf arqma-storage-linux-ubuntu-${{ matrix.ubuntu }}-$(uname -m).tar.gz arqma-storage-linux-ubuntu-${{ matrix.ubuntu }}-$(uname -m)
+          tar -czf arqma-storage-linux-ubuntu-${{ matrix.ubuntu }}-$(uname -m).tar.gz arqma-storage
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -81,9 +81,9 @@ jobs:
       - name: Create artifact
         run: |
           mkdir -p artifacts
-          cp binaries/arqma-storage artifacts/arqma-storage-macos-arm64
+          cp binaries/arqma-storage artifacts/arqma-storage
           cd artifacts
-          tar -czf arqma-storage-macos-arm64.tar.gz arqma-storage-macos-arm64
+          tar -czf arqma-storage-macos-arm64.tar.gz arqma-storage
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
